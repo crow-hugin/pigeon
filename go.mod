@@ -1,4 +1,4 @@
-module pigeon
+module github.com/crow-hugin/pigeon
 
 go 1.13
 
