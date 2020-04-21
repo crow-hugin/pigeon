@@ -12,7 +12,7 @@ func main() {
 	file := "file.txt"
 
 	r := gin.Default()
-	m := pigeon.New()
+	m := pigeon.New(nil)
 	w, _ := fsnotify.NewWatcher()
 
 	r.GET("/", func(c *gin.Context) {

@@ -8,7 +8,7 @@ import (
 
 func main() {
 	r := gin.Default()
-	m := pigeon.New()
+	m := pigeon.New(nil)
 
 	r.GET("/", func(c *gin.Context) {
 		http.ServeFile(c.Writer, c.Request, "index.html")
