@@ -68,7 +68,7 @@ type Pigeon struct {
 }
 
 // 新建信鸽实例.
-func New() *Pigeon {
+func New(conf *Config) *Pigeon {
 	upGrader := &websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -78,9 +78,11 @@ func New() *Pigeon {
 	hub := newHub()
 
 	go hub.run()
-
+	if conf == nil {
+		conf = defaultConfig()
+	}
 	return &Pigeon{
-		Config:                   defaultConfig(),
+		Config:                   conf,
 		UpGrader:                 upGrader,
 		messageHandler:           func(*Session, []byte) {},
 		messageHandlerBinary:     func(*Session, []byte) {},
