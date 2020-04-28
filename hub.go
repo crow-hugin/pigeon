@@ -79,3 +79,14 @@ func (h *hub) len() int {
 	defer h.mu.RUnlock()
 	return len(h.sessions)
 }
+
+func (h *hub) filterSession(fn func(*Session) bool) *Session {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for s := range h.sessions {
+		if fn(s) {
+			return s
+		}
+	}
+	return nil
+}

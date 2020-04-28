@@ -262,6 +262,14 @@ func (p *Pigeon) BroadcastBinaryOthers(msg []byte, s *Session) error {
 	})
 }
 
+// 过去某个单一的session
+func (p *Pigeon) FilterSession(fn func(*Session) bool) *Session {
+	if fn == nil {
+		return nil
+	}
+	return p.hub.filterSession(fn)
+}
+
 // 关闭信鸽以及所有会话的连接.
 func (p *Pigeon) Close() error {
 	if p.hub.closed() {
