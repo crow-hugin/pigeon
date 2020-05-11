@@ -130,7 +130,7 @@ func (s *Session) readPump() {
 	for {
 		t, message, err := s.conn.ReadMessage()
 		if err != nil {
-			s.pigeon.errorHandler(s, err)
+			s.pigeon.closeHandler(s, t, err.Error())
 			break
 		}
 		if t == websocket.TextMessage {

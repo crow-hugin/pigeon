@@ -55,9 +55,8 @@ loop:
 		case m := <-h.exit: // 退出
 			h.mu.Lock()
 			for s := range h.sessions {
-				s.writeMessage(m)
+				s.CloseWithMsg(m.message)
 				delete(h.sessions, s)
-				s.Close()
 			}
 			h.open = false
 			h.mu.Unlock()
