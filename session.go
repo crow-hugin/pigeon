@@ -38,15 +38,8 @@ func (s *Session) writeRaw(message *envelope) error {
 	if s.closed() {
 		return errors.New("tried to write to a closed session")
 	}
-
 	s.conn.SetWriteDeadline(time.Now().Add(s.pigeon.Config.WriteWait))
-	err := s.conn.WriteMessage(message.t, message.message)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.conn.WriteMessage(message.t, message.message)
 }
 
 // 判断会话状态
@@ -86,9 +79,7 @@ loop:
 				break loop
 			}
 
-			err := s.writeRaw(msg)
-
-			if err != nil {
+			if err := s.writeRaw(msg); err != nil {
 				s.pigeon.errorHandler(s, err)
 				break loop
 			}
@@ -121,16 +112,15 @@ func (s *Session) readPump() {
 		return nil
 	})
 
-	if s.pigeon.closeHandler != nil {
-		s.conn.SetCloseHandler(func(code int, text string) error {
-			return s.pigeon.closeHandler(s, code, text)
-		})
-	}
-
 	for {
 		t, message, err := s.conn.ReadMessage()
 		if err != nil {
-			s.pigeon.closeHandler(s, t, err.Error())
+			if websocket.IsUnexpectedCloseError(err,
+				websocket.CloseGoingAway,
+				websocket.CloseAbnormalClosure,
+				websocket.CloseServiceRestart) {
+				s.pigeon.errorHandler(s, err)
+			}
 			break
 		}
 		if t == websocket.TextMessage {
@@ -162,11 +152,7 @@ func (s *Session) WriteBinary(msg []byte) error {
 
 // 关闭会话.
 func (s *Session) Close() error {
-	if s.closed() {
-		return errors.New("session is already closed")
-	}
-	s.writeMessage(&envelope{t: websocket.CloseMessage, message: []byte{}})
-	return nil
+	return s.CloseWithMsg([]byte{})
 }
 
 // 关闭会话时写入的信息.

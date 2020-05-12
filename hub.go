@@ -79,13 +79,13 @@ func (h *hub) len() int {
 	return len(h.sessions)
 }
 
-func (h *hub) filterSession(fn func(*Session) bool) *Session {
+// session 迭代器
+func (h *hub) iterator(fn func(*Session) bool) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for s := range h.sessions {
-		if fn(s) {
-			return s
+		if !fn(s) {
+			break
 		}
 	}
-	return nil
 }

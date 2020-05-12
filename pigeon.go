@@ -8,43 +8,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Close codes defined in RFC 6455, section 11.7.
-// Duplicate of codes from gorilla/websocket for convenience.
-const (
-	CloseNormalClosure           = 1000
-	CloseGoingAway               = 1001
-	CloseProtocolError           = 1002
-	CloseUnsupportedData         = 1003
-	CloseNoStatusReceived        = 1005
-	CloseAbnormalClosure         = 1006
-	CloseInvalidFramePayloadData = 1007
-	ClosePolicyViolation         = 1008
-	CloseMessageTooBig           = 1009
-	CloseMandatoryExtension      = 1010
-	CloseInternalServerErr       = 1011
-	CloseServiceRestart          = 1012
-	CloseTryAgainLater           = 1013
-	CloseTLSHandshake            = 1015
-)
-
-// Duplicate of codes from gorilla/websocket for convenience.
-var validReceivedCloseCodes = map[int]bool{
-	CloseNormalClosure:           true,
-	CloseGoingAway:               true,
-	CloseProtocolError:           true,
-	CloseUnsupportedData:         true,
-	CloseNoStatusReceived:        false,
-	CloseAbnormalClosure:         false,
-	CloseInvalidFramePayloadData: true,
-	ClosePolicyViolation:         true,
-	CloseMessageTooBig:           true,
-	CloseMandatoryExtension:      true,
-	CloseInternalServerErr:       true,
-	CloseServiceRestart:          true,
-	CloseTryAgainLater:           true,
-	CloseTLSHandshake:            false,
-}
-
 type handleMessageFunc func(*Session, []byte)
 type handleErrorFunc func(*Session, error)
 type handleCloseFunc func(*Session, int, string) error
@@ -175,6 +138,12 @@ func (p *Pigeon) HandleRequestWithKeys(w http.ResponseWriter, r *http.Request, k
 
 	p.connectHandler(session)
 
+	if p.closeHandler != nil {
+		session.conn.SetCloseHandler(func(code int, text string) error {
+			return p.closeHandler(session, code, text)
+		})
+	}
+
 	go session.writePump()
 
 	session.readPump()
@@ -236,10 +205,8 @@ func (p *Pigeon) BroadcastBinary(msg []byte) error {
 	if p.hub.closed() {
 		return errors.New("pigeon instance is closed")
 	}
-
 	message := &envelope{t: websocket.BinaryMessage, message: msg}
 	p.hub.broadcast <- message
-
 	return nil
 }
 
@@ -262,23 +229,17 @@ func (p *Pigeon) BroadcastBinaryOthers(msg []byte, s *Session) error {
 	})
 }
 
-// 过去某个单一的session
-func (p *Pigeon) FilterSession(fn func(*Session) bool) *Session {
+// 遍历所有session
+func (p *Pigeon) Range(fn func(*Session) bool) {
 	if fn == nil {
-		return nil
+		return
 	}
-	return p.hub.filterSession(fn)
+	p.hub.iterator(fn)
 }
 
 // 关闭信鸽以及所有会话的连接.
 func (p *Pigeon) Close() error {
-	if p.hub.closed() {
-		return errors.New("pigeon instance is already closed")
-	}
-
-	p.hub.exit <- &envelope{t: websocket.CloseMessage, message: []byte{}}
-
-	return nil
+	return p.CloseWithMsg([]byte{})
 }
 
 // 关闭信鸽以及所有会话的连接，并向客户端发送消息
@@ -286,9 +247,7 @@ func (p *Pigeon) CloseWithMsg(msg []byte) error {
 	if p.hub.closed() {
 		return errors.New("pigeon instance is already closed")
 	}
-
 	p.hub.exit <- &envelope{t: websocket.CloseMessage, message: msg}
-
 	return nil
 }
 
@@ -300,9 +259,4 @@ func (p *Pigeon) Len() int {
 // 判断信鸽实例的状态.
 func (p *Pigeon) IsClosed() bool {
 	return p.hub.closed()
-}
-
-// 格式化会话关闭时的信息.
-func FormatCloseMessage(closeCode int, text string) []byte {
-	return websocket.FormatCloseMessage(closeCode, text)
 }
