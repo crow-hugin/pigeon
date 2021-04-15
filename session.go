@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// 会话包装器.
+// Session 会话包装器.
 type Session struct {
 	Request *http.Request
 	Keys    map[string]interface{}
@@ -141,7 +141,7 @@ func (s *Session) Write(msg []byte) error {
 	return nil
 }
 
-// 向会话写入二进制信息.
+// WriteBinary 向会话写入二进制信息.
 func (s *Session) WriteBinary(msg []byte) error {
 	if s.closed() {
 		return errors.New("session is closed")
@@ -150,12 +150,12 @@ func (s *Session) WriteBinary(msg []byte) error {
 	return nil
 }
 
-// 关闭会话.
+// Close 关闭会话.
 func (s *Session) Close() error {
 	return s.CloseWithMsg([]byte{})
 }
 
-// 关闭会话时写入的信息.
+// CloseWithMsg 关闭会话时写入的信息.
 func (s *Session) CloseWithMsg(msg []byte) error {
 	if s.closed() {
 		return errors.New("session is already closed")
@@ -164,24 +164,27 @@ func (s *Session) CloseWithMsg(msg []byte) error {
 	return nil
 }
 
-// key/value
+// Set key/value
 func (s *Session) Set(key string, value interface{}) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if s.Keys == nil {
 		s.Keys = make(map[string]interface{})
 	}
 	s.Keys[key] = value
 }
 
-// 获取指定key的value
+// Get 获取指定key的value
 func (s *Session) Get(key string) (value interface{}, exists bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	if s.Keys != nil {
 		value, exists = s.Keys[key]
 	}
-
 	return
 }
 
-// 必须具备某个key的value.
+// MustGet 必须具备某个key的value.
 func (s *Session) MustGet(key string) interface{} {
 	if value, exists := s.Get(key); exists {
 		return value
@@ -189,7 +192,7 @@ func (s *Session) MustGet(key string) interface{} {
 	panic("Key \"" + key + "\" does not exist")
 }
 
-// 判断会话是状态
+// IsClosed 判断会话是状态
 func (s *Session) IsClosed() bool {
 	return s.closed()
 }
