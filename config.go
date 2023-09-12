@@ -2,7 +2,7 @@ package pigeon
 
 import "time"
 
-// 信鸽的主要配置结构.
+// Config 信鸽的主要配置结构.
 type Config struct {
 	WriteWait         time.Duration // 写入超时时间.
 	PongWait          time.Duration // 响应超时时间.

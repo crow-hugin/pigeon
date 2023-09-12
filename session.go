@@ -116,6 +116,7 @@ func (s *Session) readPump() {
 		t, message, err := s.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err,
+				websocket.CloseNormalClosure,
 				websocket.CloseGoingAway,
 				websocket.CloseAbnormalClosure,
 				websocket.CloseServiceRestart) {
@@ -160,8 +161,7 @@ func (s *Session) CloseWithMsg(msg []byte) error {
 	if s.closed() {
 		return errors.New("session is already closed")
 	}
-	s.writeMessage(&envelope{t: websocket.CloseMessage, message: msg})
-	return nil
+	return s.conn.WriteControl(websocket.CloseMessage, msg, time.Now().Add(time.Second))
 }
 
 // Set key/value

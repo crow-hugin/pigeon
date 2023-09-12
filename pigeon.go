@@ -14,7 +14,7 @@ type handleCloseFunc func(*Session, int, string) error
 type handleSessionFunc func(*Session)
 type filterFunc func(*Session) bool
 
-// websocket 管理器.
+// Pigeon websocket 管理器.
 type Pigeon struct {
 	Config                   *Config
 	UpGrader                 *websocket.Upgrader
@@ -30,7 +30,7 @@ type Pigeon struct {
 	hub                      *hub
 }
 
-// 新建信鸽实例.
+// New 新建信鸽实例.
 func New(conf *Config) *Pigeon {
 	upGrader := &websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -60,59 +60,59 @@ func New(conf *Config) *Pigeon {
 	}
 }
 
-// 会话连接时的处理方法.
+// HandleConnect 会话连接时的处理方法.
 func (p *Pigeon) HandleConnect(fn func(*Session)) {
 	p.connectHandler = fn
 }
 
-// 会话断开时的处理方法.
+// HandleDisconnect 会话断开时的处理方法.
 func (p *Pigeon) HandleDisconnect(fn func(*Session)) {
 	p.disconnectHandler = fn
 }
 
-// 从会话中收到pong信息时的处理方法.
+// HandlePong 从会话中收到pong信息时的处理方法.
 func (p *Pigeon) HandlePong(fn func(*Session)) {
 	p.pongHandler = fn
 }
 
-// 收到信息时的处理方法.
+// HandleMessage 收到信息时的处理方法.
 func (p *Pigeon) HandleMessage(fn func(*Session, []byte)) {
 	p.messageHandler = fn
 }
 
-// 收到二进制信息的处理方法.
+// HandleMessageBinary 收到二进制信息的处理方法.
 func (p *Pigeon) HandleMessageBinary(fn func(*Session, []byte)) {
 	p.messageHandlerBinary = fn
 }
 
-// 发送信息时的处理方法.
+// HandleSentMessage 发送信息时的处理方法.
 func (p *Pigeon) HandleSentMessage(fn func(*Session, []byte)) {
 	p.messageSentHandler = fn
 }
 
-// 发送二进制信息的处理方法.
+// HandleSentMessageBinary 发送二进制信息的处理方法.
 func (p *Pigeon) HandleSentMessageBinary(fn func(*Session, []byte)) {
 	p.messageSentHandlerBinary = fn
 }
 
-// 发生错误时的处理方法.
+// HandleError 发生错误时的处理方法.
 func (p *Pigeon) HandleError(fn func(*Session, error)) {
 	p.errorHandler = fn
 }
 
-// 信鸽关闭时的处理方法
+// HandleClose 信鸽关闭时的处理方法
 func (p *Pigeon) HandleClose(fn func(*Session, int, string) error) {
 	if fn != nil {
 		p.closeHandler = fn
 	}
 }
 
-// 将http请求升级成websocket连接，并将其注册到信鸽实例进行管理.
+// HandleRequest 将http请求升级成websocket连接，并将其注册到信鸽实例进行管理.
 func (p *Pigeon) HandleRequest(w http.ResponseWriter, r *http.Request) error {
 	return p.HandleRequestWithKeys(w, r, nil)
 }
 
-// 与HandleRequest功能相同，增加keys.
+// HandleRequestWithKeys 与HandleRequest功能相同，增加keys.
 func (p *Pigeon) HandleRequestWithKeys(w http.ResponseWriter, r *http.Request, keys map[string]interface{}) error {
 	if p.hub.closed() {
 		return errors.New("pigeon instance is closed")
@@ -159,7 +159,7 @@ func (p *Pigeon) HandleRequestWithKeys(w http.ResponseWriter, r *http.Request, k
 	return nil
 }
 
-// 广播消息.
+// Broadcast 广播消息.
 func (p *Pigeon) Broadcast(msg []byte) error {
 	if p.hub.closed() {
 		return errors.New("pigeon instance is closed")
@@ -171,7 +171,7 @@ func (p *Pigeon) Broadcast(msg []byte) error {
 	return nil
 }
 
-// 向符合过滤器结果的会话广播消息.
+// BroadcastFilter 向符合过滤器结果的会话广播消息.
 func (p *Pigeon) BroadcastFilter(msg []byte, fn func(*Session) bool) error {
 	if p.hub.closed() {
 		return errors.New("pigeon instance is closed")
@@ -183,14 +183,14 @@ func (p *Pigeon) BroadcastFilter(msg []byte, fn func(*Session) bool) error {
 	return nil
 }
 
-// 向某个会话之外的所有会话广播消息.
+// BroadcastOthers 向某个会话之外的所有会话广播消息.
 func (p *Pigeon) BroadcastOthers(msg []byte, s *Session) error {
 	return p.BroadcastFilter(msg, func(q *Session) bool {
 		return s != q
 	})
 }
 
-// 向多个会话广播消息.
+// BroadcastMultiple 向多个会话广播消息.
 func (p *Pigeon) BroadcastMultiple(msg []byte, sessions []*Session) error {
 	for _, sess := range sessions {
 		if writeErr := sess.Write(msg); writeErr != nil {
@@ -200,7 +200,7 @@ func (p *Pigeon) BroadcastMultiple(msg []byte, sessions []*Session) error {
 	return nil
 }
 
-// 广播二进制消息.
+// BroadcastBinary 广播二进制消息.
 func (p *Pigeon) BroadcastBinary(msg []byte) error {
 	if p.hub.closed() {
 		return errors.New("pigeon instance is closed")
@@ -210,7 +210,7 @@ func (p *Pigeon) BroadcastBinary(msg []byte) error {
 	return nil
 }
 
-// 向符合过滤器结果的会话广播二进制消息.
+// BroadcastBinaryFilter 向符合过滤器结果的会话广播二进制消息.
 func (p *Pigeon) BroadcastBinaryFilter(msg []byte, fn func(*Session) bool) error {
 	if p.hub.closed() {
 		return errors.New("pigeon instance is closed")
@@ -222,14 +222,14 @@ func (p *Pigeon) BroadcastBinaryFilter(msg []byte, fn func(*Session) bool) error
 	return nil
 }
 
-// 向某个会话之外的所有会话广播二进制消息.
+// BroadcastBinaryOthers 向某个会话之外的所有会话广播二进制消息.
 func (p *Pigeon) BroadcastBinaryOthers(msg []byte, s *Session) error {
 	return p.BroadcastBinaryFilter(msg, func(q *Session) bool {
 		return s != q
 	})
 }
 
-// 遍历所有session
+// Range 遍历所有session
 func (p *Pigeon) Range(fn func(*Session) bool) {
 	if fn == nil {
 		return
@@ -237,12 +237,12 @@ func (p *Pigeon) Range(fn func(*Session) bool) {
 	p.hub.iterator(fn)
 }
 
-// 关闭信鸽以及所有会话的连接.
+// Close 关闭信鸽以及所有会话的连接.
 func (p *Pigeon) Close() error {
 	return p.CloseWithMsg([]byte{})
 }
 
-// 关闭信鸽以及所有会话的连接，并向客户端发送消息
+// CloseWithMsg 关闭信鸽以及所有会话的连接，并向客户端发送消息
 func (p *Pigeon) CloseWithMsg(msg []byte) error {
 	if p.hub.closed() {
 		return errors.New("pigeon instance is already closed")
@@ -251,12 +251,12 @@ func (p *Pigeon) CloseWithMsg(msg []byte) error {
 	return nil
 }
 
-// 获取会话连接数量.
+// Len 获取会话连接数量.
 func (p *Pigeon) Len() int {
 	return p.hub.len()
 }
 
-// 判断信鸽实例的状态.
+// IsClosed 判断信鸽实例的状态.
 func (p *Pigeon) IsClosed() bool {
 	return p.hub.closed()
 }
