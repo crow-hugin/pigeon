@@ -48,8 +48,9 @@
         }
       };
 
+      setTimeout(() => ws.close(1000), 5000)
+      // setInterval(() => ws.send("\x9A"), 5000)
 
-      setTimeout(() => ws.close(1000, "离线"), 5000)
 
     </script>
   </body>

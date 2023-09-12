@@ -63,7 +63,7 @@ func (s *Session) close() {
 
 // 向客户端发送ping信息
 func (s *Session) ping() {
-	s.writeRaw(&envelope{t: websocket.PingMessage, message: []byte{}})
+	s.writeRaw(&envelope{t: websocket.PingMessage, message: []byte("Ping")})
 }
 
 // 写入信息流
@@ -79,12 +79,12 @@ loop:
 				break loop
 			}
 
-			if err := s.writeRaw(msg); err != nil {
-				s.pigeon.errorHandler(s, err)
+			if msg.t == websocket.CloseMessage {
 				break loop
 			}
 
-			if msg.t == websocket.CloseMessage {
+			if err := s.writeRaw(msg); err != nil {
+				s.pigeon.errorHandler(s, err)
 				break loop
 			}
 
@@ -161,7 +161,8 @@ func (s *Session) CloseWithMsg(msg []byte) error {
 	if s.closed() {
 		return errors.New("session is already closed")
 	}
-	return s.conn.WriteControl(websocket.CloseMessage, msg, time.Now().Add(time.Second))
+	s.writeMessage(&envelope{t: websocket.CloseMessage, message: msg})
+	return s.conn.WriteControl(websocket.CloseMessage, msg, time.Now())
 }
 
 // Set key/value

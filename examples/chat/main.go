@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"net/http"
+	"time"
 )
 
 func main() {
@@ -24,7 +25,14 @@ func main() {
 		m.Broadcast(msg)
 	})
 	m.HandleConnect(func(session *pigeon.Session) {
-		fmt.Println("有新的链接")
+		fmt.Println("新的链接")
+		m.Range(func(s2 *pigeon.Session) bool {
+			if session == s2 {
+				fmt.Println("会话已存在")
+				return false
+			}
+			return true
+		})
 	})
 
 	m.HandleDisconnect(func(session *pigeon.Session) {
@@ -35,6 +43,9 @@ func main() {
 	})
 	m.HandleError(func(session *pigeon.Session, err error) {
 		fmt.Println("发生错误: ", err)
+	})
+	m.HandlePong(func(session *pigeon.Session) {
+		fmt.Println("HandlePong: ", "响应前处理", time.Now())
 	})
 
 	r.Run(":5555")
